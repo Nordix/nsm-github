@@ -14,7 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: networkservicemesh/.github
+          repository: Nordix/nsm-github
+          ref: arp-env-checker-test
           path: .github
       - uses: actions/checkout@v4
         with:
