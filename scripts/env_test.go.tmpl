@@ -1,0 +1,100 @@
+package main_test
+// vim: syn=go:noet
+
+import (
+	"testing"
+	"regexp"
+	"fmt"
+	"strings"
+	"os"
+	"sort"
+	"slices"
+	"github.com/kelseyhightower/envconfig"
+
+	config_module __MODULENAME__
+
+)
+func sortStrList(set []string) {
+	sort.Slice(set,
+		func(x,y int) bool { return( set)[x] < (set)[y]})
+}
+
+func union(set_a, set_b []string) []string {
+	var dj []string
+	sortStrList(set_a)
+	sortStrList(set_b)
+
+	if len(set_a) <= 0 || len(set_b) <= 0 {
+		return dj
+	}
+
+	j := 0;
+	i := 0;
+	for ;; {
+		if  set_a[i]== set_b[j] {
+			dj = append(dj, set_a[i])
+			j++
+			i++
+		} else if set_a[i] > set_b[j] {
+			j++
+		} else if set_a[i] < set_b[j] {
+			i++
+		}
+		if i >= len(set_a) || j >= len(set_b) {
+			break
+		}
+	}
+	return dj
+}
+
+func setSubtract(set_a, set_b []string) []string {
+	var set []string
+	for _, elem := range set_a {
+		if ! slices.Contains(set_b, elem) {
+			set = append(set,elem)
+		}
+	}
+	return set
+}
+
+func printSet(set []string) {
+	for i := range set {
+		fmt.Printf("set[%d]:%v\n", i, set[i])
+	}
+}
+
+
+const (
+	DefaultTableFormat = `{{range .}}{{usage_key .}}
+{{end}}
+`
+)
+func TestEnv(t* testing.T) {
+
+	readme,err := os.ReadFile("./README.md")
+	if err != nil {
+		t.Fatalf("%s", err.Error())
+	}
+	prefix := __PREFIX__
+
+	re := regexp.MustCompile(strings.ToUpper(prefix)+`_\w+`)
+	readme_envs := re.FindAllString(string(readme),-1)
+
+	config := &config_module.Config{}
+	var expectedBuilder strings.Builder
+	envconfig.Usagef(prefix, config, &expectedBuilder, DefaultTableFormat)
+	s := strings.Trim(expectedBuilder.String(), " \n")
+	cmd_envs := strings.Split(s,"\n")
+
+	u := union(readme_envs, cmd_envs)
+	r := setSubtract(readme_envs,u)
+	if len(r) > 0 {
+		t.Errorf("Missing envs from cmd: %v\n", r)
+	}
+
+	r = setSubtract(cmd_envs,u)
+	if len(r) > 0 {
+		t.Errorf("Missing envs from README: %v\n", r)
+	}
+}
+

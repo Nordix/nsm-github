@@ -2,12 +2,6 @@
 name: Env check
 on:
   workflow_call:
-    inputs:
-      prefix:
-        description: "Env parameter prefix"
-        required: true
-        default: "NSM_"
-        type: string
 jobs:
   check-env:
     runs-on: ubuntu-latest
@@ -21,5 +15,7 @@ jobs:
         with:
           path: cmd
       - name: run-envcheck
-        run: .github/scripts/env-check.sh cmd ${{ inputs.prefix }}
+        run: |
+          .github/scripts/unpack_template.sh cmd
+          cd cmd && go get && go test env_test.go
 
